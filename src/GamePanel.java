@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.util.Random;
 
 
 public class GamePanel extends JPanel{
@@ -86,6 +87,13 @@ public class GamePanel extends JPanel{
             }
     };
 
+    // Current falling piece
+    private int currentShape;       // 0-6
+    private int currentRotation;   //0-3
+    private int currentX;          // column of the piece origin
+    private int currentY;          // Row of piece origin
+
+    private final Random random = new Random();
 
     public GamePanel(){
 
@@ -95,11 +103,22 @@ public class GamePanel extends JPanel{
 
         // Important for key presses
         setFocusable(true);
+
+        // Spawn the first piece when the game starts
+        spawnNewPiece();
+    }
+
+    // Creates new random piece at the top of the board
+    private void spawnNewPiece(){
+        currentShape = random.nextInt(7);  // 0 to 6
+        currentRotation = 0;
+        currentX = 3;            // roughly in the middle
+        currentY = 0;            // top of the board
     }
 
     // Method is called whenever java panel needs to be redrawn
     @Override
-    protected void paintComponent(Graphics g){
+    protected void paintComponent(Graphics g) {
 
         //Always has to be called first, clears previous frame (prevents ghosting)
         super.paintComponent(g);
@@ -109,7 +128,7 @@ public class GamePanel extends JPanel{
             for (int col = 0; col < COLS; col++) {
                 int value = board[row][col];
 
-                if (value !=0) {
+                if (value != 0) {
 
                     g.setColor(COLORS[value]);
                     g.fillRect(col * BLOCK + 1, row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
@@ -117,13 +136,32 @@ public class GamePanel extends JPanel{
                     // simple border
                     g.setColor(COLORS[value].darker());
                     g.drawRect(col * BLOCK + 1, row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
-                }else{
+                } else {
                     //Empty cell grid
                     g.setColor(new Color(40, 40, 40));
                     g.drawRect(col * BLOCK, row * BLOCK, BLOCK, BLOCK);
                 }
             }
         }
+
+            // Draw current falling piece
+            int[][] shape = SHAPES[currentShape][currentRotation];
+            for (int[] block : shape) {
+                int x = currentX + block[0];
+                int y = currentY + block[1];
+
+                //Only draw if it's on the visible board
+                if (y > +0) {
+                    drawBlock(g, x, y, COLORS[currentShape + 1]);
+                }
+            }
+        }
+
+        // Helper method to not repeat the same drawing code.
+        private void drawBlock(Graphics g, int col, int row, Color color){
+            g.setColor(color);
+            g.fillRect(col *BLOCK + 1, row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
+        }
+
     }
 
-}
