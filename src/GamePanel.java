@@ -4,7 +4,7 @@ import java.awt.event.*;
 import java.util.Random;
 
 
-public class GamePanel extends JPanel implements KeyListener{
+public class GamePanel extends JPanel implements KeyListener, ActionListener{
 
     // Board constants
     // They never change so they are final and static
@@ -95,6 +95,7 @@ public class GamePanel extends JPanel implements KeyListener{
     private int currentY;          // Row of piece origin
 
     private final Random random = new Random();
+    private final Timer timer;
 
     public GamePanel(){
 
@@ -106,6 +107,10 @@ public class GamePanel extends JPanel implements KeyListener{
         setFocusable(true);
 
         addKeyListener(this);   // start listening for keys
+
+        //Timer fires every 500 milliseconds (0.5 seconds)
+        timer = new Timer(500, this);
+        timer.start();
 
         // Spawn the first piece when the game starts
         spawnNewPiece();
@@ -147,6 +152,38 @@ public class GamePanel extends JPanel implements KeyListener{
 
         }
         return true;
+    }
+
+    // Locks current piece onto board permanently and spawns new piece
+    private void lockPiece() {
+        int[][] shape = SHAPES[currentShape][currentRotation];
+
+        for (int[] block : shape) {
+            int x = currentX + block[0];
+            int y = currentY + block[1];
+
+            if (y >= 0) {
+                // Store the color index (1-7) on the board
+                board[y][x] = currentShape + 1;
+            }
+        }
+
+        // After locking, bring a new piece
+        spawnNewPiece();
+
+    }
+
+    // ======== TIMER (automatic falling) ========
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        // Try to move the piece one row down
+        if (isValidPosition(currentX, currentY + 1, currentRotation)) {
+            currentY++;
+        }else {
+            // Cannot move down, lock it
+            lockPiece();
+        }
+        repaint();
     }
 
     // Method is called whenever java panel needs to be redrawn
