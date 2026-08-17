@@ -1,9 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.Random;
 
 
-public class GamePanel extends JPanel{
+public class GamePanel extends JPanel implements KeyListener{
 
     // Board constants
     // They never change so they are final and static
@@ -104,6 +105,8 @@ public class GamePanel extends JPanel{
         // Important for key presses
         setFocusable(true);
 
+        addKeyListener(this);   // start listening for keys
+
         // Spawn the first piece when the game starts
         spawnNewPiece();
     }
@@ -114,6 +117,36 @@ public class GamePanel extends JPanel{
         currentRotation = 0;
         currentX = 3;            // roughly in the middle
         currentY = 0;            // top of the board
+    }
+
+    /**
+     * Checks if the piece would be in a valid position
+     * if it was at (x, y) with the given rotation.
+     *
+     * Returns false if:
+     * - any block goes outside the left/right walls
+     * - any block goes below the floor
+     * - any block hits a locked block on the board
+     */
+
+    private boolean isValidPosition(int x, int y, int rotation) {
+        int [][] shape = SHAPES[currentShape][rotation];
+
+        for (int[] block : shape) {
+            int newX = x + block[0];
+            int newY = y + block[1];
+
+            // Hit left or right wall
+            if (newX < 0 || newX >= COLS) return false;
+
+            // Hit the floor
+            if (newY >= ROWS) return false;
+
+            // Hit a locked block (only checked if the block is on the board)
+            if (newY >= 0 && board[newY][newX] != 0) return false;
+
+        }
+        return true;
     }
 
     // Method is called whenever java panel needs to be redrawn
@@ -161,7 +194,45 @@ public class GamePanel extends JPanel{
         private void drawBlock(Graphics g, int col, int row, Color color){
             g.setColor(color);
             g.fillRect(col *BLOCK + 1, row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
+            g.setColor(color.darker());
+            g.drawRect(col * BLOCK + 1, row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
         }
 
+    // ======= KEYBOARD =======
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_LEFT:
+                if (isValidPosition(currentX - 1, currentY, currentRotation)){
+                    currentX--;
+                }
+                break;
+
+            case KeyEvent.VK_RIGHT:
+                if (isValidPosition(currentX + 1, currentY, currentRotation)) {
+                    currentX++;
+                }
+                break;
+
+            case KeyEvent.VK_DOWN:
+                if (isValidPosition(currentX, currentY + 1, currentRotation)) {
+                    currentY++;
+                }
+                break;
+
+            case KeyEvent.VK_UP:
+                int newRotation = (currentRotation + 1) % 4;
+                if (isValidPosition(currentX, currentY, newRotation)) {
+                    currentRotation = newRotation;
+                }
+                break;
+        }
+        repaint(); // redraw after every move
     }
+    // Methods must be implemented even if not used
+    @Override public void keyReleased(KeyEvent e) {}
+    @Override public void keyTyped(KeyEvent e) {}
+
+}
 
