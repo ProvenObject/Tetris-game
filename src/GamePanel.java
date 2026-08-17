@@ -168,9 +168,48 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
             }
         }
 
-        // After locking, bring a new piece
+        //After locking the piece, check for full lines
+        clearLines();
+
+        // Then spawn the next piece
         spawnNewPiece();
 
+    }
+
+    /** Checks the board for full rows and removes them
+     *Everything above a cleared row falls down
+     */
+    private void clearLines() {
+        // from the bottom row to the top
+        for (int row = ROWS -1; row >= 0; row--) {
+
+            //Assume row is full until empty cell is found
+            boolean isFull = true;
+
+            for (int col = 0; col < COLS; col++) {
+                if (board[row][col] == 0) {
+                    isFull = false;
+                    break; // no need to check rest of this row
+                }
+            }
+
+            if (isFull){
+                // This row is completely full, remove it
+
+                // Move every row above this one down by one
+                for (int r = row; r > 0; r--) {
+                    // Copy row above into current row
+                    for (int c = 0; c < COLS; c++){
+                        board[r][c] = board[r - 1][c];
+                    }
+                }
+
+                // Clear the very top row (it is now empty)
+                for (int c = 0; c < COLS; c++) {
+                    board[0][c] = 0;
+                }
+            }
+        }
     }
 
     // ======== TIMER (automatic falling) ========
