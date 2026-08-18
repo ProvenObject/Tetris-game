@@ -12,6 +12,10 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
     public static final int ROWS = 20;
     public static final int BLOCK = 30;  // each square is 30x30 pixels
 
+    private int score = 0;
+    private int level = 1;
+    private int linesCleared = 0;
+
     // Actual game board
     private final int[][] board = new int[ROWS][COLS];
 
@@ -98,17 +102,12 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
     private final Timer timer;
 
     public GamePanel(){
-
-        //Calculate the exact size the panel needs
-        setPreferredSize(new Dimension(COLS * BLOCK, ROWS * BLOCK));
+        // Make the panel wider so there is space for score
+        setPreferredSize(new Dimension(COLS * BLOCK + 160, ROWS * BLOCK));
         setBackground(Color.BLACK);
-
-        // Important for key presses
         setFocusable(true);
+        addKeyListener(this);
 
-        addKeyListener(this);   // start listening for keys
-
-        //Timer fires every 500 milliseconds (0.5 seconds)
         timer = new Timer(500, this);
         timer.start();
 
@@ -180,6 +179,7 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
      *Everything above a cleared row falls down
      */
     private void clearLines() {
+        int linesThisTurn = 0;
         // from the bottom row to the top
         for (int row = ROWS -1; row >= 0; row--) {
 
@@ -194,6 +194,7 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
             }
 
             if (isFull){
+                linesThisTurn++;
                 // This row is completely full, remove it
 
                 // Move every row above this one down by one
@@ -208,7 +209,24 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
                 for (int c = 0; c < COLS; c++) {
                     board[0][c] = 0;
                 }
+                row++; // check the same row again
             }
+        }
+
+        // Award points if any lines are cleared
+        if (linesThisTurn > 0) {
+            int[] points = {0, 40, 100, 300, 1200};
+            score += points[linesThisTurn] * level;
+
+            // Level up every 10 lines
+            linesCleared += linesThisTurn;
+
+            level = (linesCleared / 10) + 1;
+
+            // Make game faster, starts at 500ms,
+            // gets 40ms faster each level, minimum 100ms
+            int newDelay = Math.max(100, 500 - (level -1) * 40);
+            timer.setDelay(newDelay);
         }
     }
 
@@ -267,11 +285,22 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         }
 
         // Helper method to not repeat the same drawing code.
-        private void drawBlock(Graphics g, int col, int row, Color color){
+        private void drawBlock(Graphics g, int col, int row, Color color) {
             g.setColor(color);
-            g.fillRect(col *BLOCK + 1, row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
+            g.fillRect(col * BLOCK + 1, row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
             g.setColor(color.darker());
             g.drawRect(col * BLOCK + 1, row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
+
+
+            // ====== SIDE PANEL (Score/ Level / Lines) ======
+            int panelX = COLS * BLOCK + 20;
+
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 18));
+
+            g.drawString("Score: " + score, panelX, 40);
+            g.drawString("Level: " + level, panelX, 70);
+            g.drawString("Lines: " + linesCleared, panelX, 100);
         }
 
     // ======= KEYBOARD =======
