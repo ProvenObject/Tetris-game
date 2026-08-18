@@ -16,6 +16,8 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
     private int level = 1;
     private int linesCleared = 0;
     private boolean gameOver = false;
+    private int nextShape;
+    private boolean paused = false;
 
     // Actual game board
     private final int[][] board = new int[ROWS][COLS];
@@ -112,13 +114,16 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         timer = new Timer(500, this);
         timer.start();
 
-        // Spawn the first piece when the game starts
+        // Prepare the first "next" piece, then spawn the real current one
+        nextShape = random.nextInt(7);
         spawnNewPiece();
     }
 
     // Creates new random piece at the top of the board
     private void spawnNewPiece(){
-        currentShape = random.nextInt(7);  // 0 to 6
+        currentShape = nextShape;             // take the piece we already prepared
+        nextShape = random.nextInt(7); // prepare a new one for later
+
         currentRotation = 0;
         currentX = 3;            // roughly in the middle
         currentY = 0;            // top of the board
@@ -250,6 +255,9 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
     // ======== TIMER (automatic falling) ========
     @Override
     public void actionPerformed(ActionEvent e) {
+        if (gameOver || paused) return; // do nothing if paused or game over
+
+
         // Try to move the piece one row down
         if (isValidPosition(currentX, currentY + 1, currentRotation)) {
             currentY++;
@@ -337,6 +345,43 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
                 g.drawString("Press R to Restart", 55, ROWS * BLOCK / 2 + 20);
 
             }
+            // ===== NEXT PIECE =====
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 18));
+            g.drawString("Next:", panelX, 160);
+
+            // Manually draw next piece:
+            int[][] next = SHAPES[nextShape][0];
+            for (int[] block : next) {
+                int drawX = panelX + 10 + block[0] * BLOCK;
+                int drawY = 180 + block[1] * BLOCK;
+
+                g.setColor(COLORS[nextShape + 1]);
+                g.fillRect(drawX + 1, drawY + 1, BLOCK - 2, BLOCK - 2);
+                g.setColor(COLORS[nextShape + 1].darker());
+                g.drawRect(drawX + 1, drawY + 1, BLOCK - 2, BLOCK - 2);
+            }
+
+            // ===== CONTROLS HELP =====
+            g.setFont(new Font("Arial", Font.PLAIN, 12));
+            g.setColor(Color.LIGHT_GRAY);
+            g.drawString("← → : Move", panelX, 320);
+            g.drawString("↑    : Rotate", panelX, 340);
+            g.drawString("↓    : Soft Drop", panelX, 360);
+            g.drawString("Space: Hard Drop", panelX, 380);
+            g.drawString("P    : Pause", panelX, 400);
+            g.drawString("R    : Restart", panelX, 420);
+
+            // ===== PAUSED OVERLAY =====
+            if (paused) {
+                g.setColor(new Color(0, 0, 0, 180));
+                g.fillRect(0, 0, COLS * BLOCK, ROWS * BLOCK);
+
+                g.setColor(Color.YELLOW);
+                g.setFont(new Font("Arial", Font.BOLD, 36));
+                g.drawString("PAUSED", 70, ROWS * BLOCK / 2);
+            }
+
 
         }
 
@@ -364,6 +409,14 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
             }
             return;
         }
+
+        //pause / unpause
+        if (e.getKeyCode() == KeyEvent.VK_P) {
+            paused = !paused;
+            repaint();
+            return;
+        }
+        if (paused) return; // ignore all other keys while paused
 
         switch (e.getKeyCode()) {
             case KeyEvent.VK_LEFT:
