@@ -15,6 +15,7 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
     private int score = 0;
     private int level = 1;
     private int linesCleared = 0;
+    private boolean gameOver = false;
 
     // Actual game board
     private final int[][] board = new int[ROWS][COLS];
@@ -121,7 +122,16 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         currentRotation = 0;
         currentX = 3;            // roughly in the middle
         currentY = 0;            // top of the board
+
+        // If the new piece is already colliding, the game is over
+        if (!isValidPosition(currentX, currentY, currentRotation)){
+            gameOver = true;
+            timer.stop();
+        }
+
     }
+
+        // If the new piece is already colliding, the game is over
 
     /**
      * Checks if the piece would be in a valid position
@@ -229,6 +239,13 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
             timer.setDelay(newDelay);
         }
     }
+    // Instantly drops the piece as far down as it can go and locks it
+    private void hardDrop(){
+        while (isValidPosition(currentX, currentY + 1, currentRotation)) {
+            currentY++;
+        }
+        lockPiece();
+    }
 
     // ======== TIMER (automatic falling) ========
     @Override
@@ -284,6 +301,8 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
             }
         }
 
+
+
         // Helper method to not repeat the same drawing code.
         private void drawBlock(Graphics g, int col, int row, Color color) {
             g.setColor(color);
@@ -301,12 +320,51 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
             g.drawString("Score: " + score, panelX, 40);
             g.drawString("Level: " + level, panelX, 70);
             g.drawString("Lines: " + linesCleared, panelX, 100);
+
+
+            // ====== GAME OVER SCREEN =======
+            if (gameOver){
+                // Dark Transparent Overlay
+                g.setColor(new Color(0, 0,0, 180));
+                g.fillRect(0, 0, COLS * BLOCK, ROWS * BLOCK);
+
+                g.setColor(Color.RED);
+                g.setFont(new Font("Arial", Font.BOLD, 36));
+                g.drawString("Game Over", 40, ROWS * BLOCK / 2 - 20);
+
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Arial", Font.PLAIN, 16));
+                g.drawString("Press R to Restart", 55, ROWS * BLOCK / 2 + 20);
+
+            }
+
         }
 
     // ======= KEYBOARD =======
 
     @Override
     public void keyPressed(KeyEvent e) {
+        // If the game is over, only allow Restart
+        if (gameOver) {
+            if (e.getKeyCode() == KeyEvent.VK_R) {
+                // Reset everything
+                for (int r = 0; r < ROWS; r++) {
+                    for (int c = 0; c < COLS; c++) {
+                        board[r][c] = 0;
+                    }
+                }
+                score = 0;
+                level = 1;
+                linesCleared = 0;
+                gameOver = false;
+                timer.setDelay(500);
+                spawnNewPiece();
+                timer.start();
+                repaint();
+            }
+            return;
+        }
+
         switch (e.getKeyCode()) {
             case KeyEvent.VK_LEFT:
                 if (isValidPosition(currentX - 1, currentY, currentRotation)){
@@ -331,6 +389,10 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
                 if (isValidPosition(currentX, currentY, newRotation)) {
                     currentRotation = newRotation;
                 }
+                break;
+
+            case KeyEvent.VK_SPACE:
+                hardDrop();
                 break;
         }
         repaint(); // redraw after every move
